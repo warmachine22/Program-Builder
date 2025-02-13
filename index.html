@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABA Program Generator</title>
+  <style>
+    /* Global Styles */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f6f8;
+      color: #333;
+    }
+    .step {
+      margin-bottom: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+      margin-right: 5px;
+      background-color: #007bff;
+      color: #fff;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    h2, h3, h4 {
+      margin-bottom: 10px;
+    }
+    
+    /* Import Section */
+    #importSection {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Summary Section */
+    #summarySection {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    #summarySection h3 {
+      display: inline-block;
+      margin-right: 20px;
+    }
+    /* Export button always in summary */
+    #exportSummaryBtn {
+      background-color: #28a745;
+      border: none;
+      padding: 10px 15px;
+      font-size: 1rem;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #exportSummaryBtn:hover {
+      background-color: #218838;
+    }
+    .summaryDomain {
+      margin-bottom: 10px;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .summaryProgram {
+      margin-left: 20px;
+      padding: 3px 0;
+    }
+    .summaryProgram button {
+      background-color: #6c757d;
+      margin-left: 5px;
+      padding: 4px 8px;
+      font-size: 0.9rem;
+      border-radius: 4px;
+    }
+    
+    /* Program/Target List Styles */
+    .programItem {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .programHeader {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+    .toggleTargetsBtn {
+      background: none;
+      border: 1px solid #007bff;
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin-right: 8px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: #007bff;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    .toggleTargetsBtn:hover {
+      background-color: #007bff;
+      color: #fff;
+    }
+    .programLabel {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    .programStatus {
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: #fff;
+      margin-top: 4px;
+    }
+    .programStatus.active {
+      background-color: #28a745; /* green */
+    }
+    .programStatus.inactive {
+      background-color: #dc3545; /* red */
+    }
+    .targetsContainer {
+      margin-left: 30px;
+      margin-top: 8px;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 600px) {
+      button, input[type="text"], select {
+        width: 100%;
+      }
+      .programHeader {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .toggleTargetsBtn {
+        margin-bottom: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Import/Update Library Section -->
+  <div id="importSection">
+    <h2>Library Data Management</h2>
+    <button id="importLibraryBtn">Import/Update Library</button>
+    <input type="file" id="importFile" accept=".csv" style="display:none">
+    <p>CSV file must include header: <strong>domain, program, target, SD</strong></p>
+  </div>
+
+  <!-- Summary Section -->
+  <div id="summarySection">
+    <h3>Program Summary</h3>
+    <button id="exportSummaryBtn">Export CSV</button>
+    <div id="summaryContent">
+      <em>No selections yet.</em>
+    </div>
+  </div>
+
+  <!-- Step 1: Enter Child's Name -->
+  <div id="step1" class="step">
+    <h2>Enter Child's Name</h2>
+    <input type="text" id="childName" placeholder="Child's Name">
+    <button id="toStep2">Next</button>
+  </div>
+
+  <!-- Step 2: Select Domain -->
+  <div id="step2" class="step hidden">
+    <h2>Select Domain</h2>
+    <select id="domainSelect">
+      <option value="">-- Select Domain --</option>
+    </select>
+    <button id="toStep3">Next</button>
+  </div>
+
+  <!-- Step 3: Select Programs & Targets -->
+  <div id="step3" class="step hidden">
+    <h2>Select Programs & Targets for <span id="currentDomainLabel"></span></h2>
+    <div id="programsContainer"></div>
+    <button id="cancelCurrentDomainBtn">Cancel Current Domain</button>
+    <button id="addDomainBtn">Save</button>
+  </div>
+
+  <script>
+    /***********************
+     * Global Variables
+     ***********************/
+    let libraryData;
+    let childName = "";
+    let selectedDomain = "";
+    // 'selections' holds confirmed domain selections:
+    // Each element: { domain: string, programs: [ { program: string, targets: [string] } ] }
+    let selections = [];
+    // When editing a program from summary, this holds the program object (with domain, program, targets)
+    let editingProgram = null;
+    
+    /***********************
+     * Load Library Data from Local Storage or Use Sample Data
+     ***********************/
+    if (localStorage.getItem('abaLibrary')) {
+      libraryData = JSON.parse(localStorage.getItem('abaLibrary'));
+    } else {
+      libraryData = [
+        { domain: 'Social',    program: 'Program A', target: 'Target 1', SD: 'SD A1' },
+        { domain: 'Social',    program: 'Program A', target: 'Target 2', SD: 'SD A2' },
+        { domain: 'Social',    program: 'Program B', target: 'Target 3', SD: 'SD B1' },
+        { domain: 'Cognitive', program: 'Program C', target: 'Target 4', SD: 'SD C1' },
+        { domain: 'Cognitive', program: 'Program D', target: 'Target 5', SD: 'SD D1' },
+        { domain: 'Cognitive', program: 'Program C', target: 'Target 6', SD: 'SD C2' }
+      ];
+      localStorage.setItem('abaLibrary', JSON.stringify(libraryData));
+    }
+    
+    /***********************
+     * Library Import/Update Functionality
+     ***********************/
+    const importLibraryBtn = document.getElementById('importLibraryBtn');
+    const importFileInput = document.getElementById('importFile');
+    
+    importLibraryBtn.addEventListener('click', () => {
+      importFileInput.click();
+    });
+    
+    importFileInput.addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const contents = e.target.result;
+        const parsedData = parseCSV(contents);
+        if (parsedData) {
+          libraryData = parsedData;
+          localStorage.setItem('abaLibrary', JSON.stringify(libraryData));
+          alert("Library updated successfully!");
+          if (!document.getElementById('step2').classList.contains('hidden')) {
+            populateDomainSelect();
+          }
+        } else {
+          alert("Failed to parse CSV file. Ensure the header is: domain, program, target, SD");
+        }
+      };
+      reader.readAsText(file);
+    });
+    
+    // Simple CSV parser assuming a well-formed CSV (no quoted commas)
+    function parseCSV(text) {
+      const lines = text.split(/\r\n|\n/);
+      if (lines.length < 2) return null;
+      const headers = lines[0].split(',').map(h => h.trim());
+      const expected = ['domain', 'program', 'target', 'sd'];
+      const lowerHeaders = headers.map(h => h.toLowerCase());
+      for (let i = 0; i < expected.length; i++) {
+        if (lowerHeaders[i] !== expected[i]) {
+          alert("CSV header does not match expected format: domain, program, target, SD");
+          return null;
+        }
+      }
+      const data = [];
+      for (let i = 1; i < lines.length; i++) {
+        if (lines[i].trim() === "") continue;
+        const values = lines[i].split(',').map(v => v.trim());
+        if (values.length < 4) continue;
+        data.push({
+          domain: values[0],
+          program: values[1],
+          target: values[2],
+          SD: values[3]
+        });
+      }
+      return data;
+    }
+    
+    /***********************
+     * Summary Update Functionality
+     ***********************/
+    function updateSummary() {
+      const summaryContent = document.getElementById('summaryContent');
+      summaryContent.innerHTML = "";
+      if (selections.length === 0) {
+        summaryContent.innerHTML = "<em>No selections yet.</em>";
+        return;
+      }
+      selections.forEach((domainSelection, dIndex) => {
+        const domainDiv = document.createElement('div');
+        domainDiv.className = 'summaryDomain';
+        let totalTargets = domainSelection.programs.reduce((acc, prog) => acc + prog.targets.length, 0);
+        const domainHeader = document.createElement('h4');
+        domainHeader.textContent = `${domainSelection.domain}: ${domainSelection.programs.length} program(s), ${totalTargets} target(s)`;
+        domainDiv.appendChild(domainHeader);
+        domainSelection.programs.forEach((prog, pIndex) => {
+          const progDiv = document.createElement('div');
+          progDiv.className = 'summaryProgram';
+          progDiv.textContent = `${prog.program} (${prog.targets.length} target(s)) `;
+    
+          // Remove Button
+          const removeBtn = document.createElement('button');
+          removeBtn.textContent = "Remove";
+          removeBtn.addEventListener('click', function() {
+            removeProgramFromSelection(dIndex, pIndex);
+          });
+          progDiv.appendChild(removeBtn);
+    
+          // Edit Button
+          const editBtn = document.createElement('button');
+          editBtn.textContent = "Edit";
+          editBtn.addEventListener('click', function() {
+            editProgramFromSummary(dIndex, pIndex);
+          });
+          progDiv.appendChild(editBtn);
+    
+          domainDiv.appendChild(progDiv);
+        });
+        summaryContent.appendChild(domainDiv);
+      });
+    }
+    
+    function removeProgramFromSelection(domainIndex, programIndex) {
+      selections[domainIndex].programs.splice(programIndex, 1);
+      if (selections[domainIndex].programs.length === 0) {
+        selections.splice(domainIndex, 1);
+      }
+      updateSummary();
+    }
+    
+    /***********************
+     * Navigation: Step 1 -> Step 2
+     ***********************/
+    document.getElementById('toStep2').addEventListener('click', function() {
+      childName = document.getElementById('childName').value.trim();
+      if (childName === '') {
+        alert("Please enter a child's name");
+        return;
+      }
+      document.getElementById('step1').classList.add('hidden');
+      document.getElementById('step2').classList.remove('hidden');
+      populateDomainSelect();
+    });
+    
+    function populateDomainSelect() {
+      const domainSelect = document.getElementById('domainSelect');
+      domainSelect.innerHTML = '<option value="">-- Select Domain --</option>';
+      const domains = [...new Set(libraryData.map(row => row.domain))];
+      domains.forEach(domain => {
+        const opt = document.createElement('option');
+        opt.value = domain;
+        opt.textContent = domain;
+        domainSelect.appendChild(opt);
+      });
+    }
+    
+    /***********************
+     * Navigation: Step 2 -> Step 3 (Programs & Targets)
+     ***********************/
+    document.getElementById('toStep3').addEventListener('click', function() {
+      selectedDomain = document.getElementById('domainSelect').value;
+      if (selectedDomain === '') {
+        alert("Please select a domain");
+        return;
+      }
+      document.getElementById('step2').classList.add('hidden');
+      document.getElementById('step3').classList.remove('hidden');
+      document.getElementById('currentDomainLabel').textContent = selectedDomain;
+      updateStep3Buttons();
+      populateProgramsAndTargets(selectedDomain);
+    });
+    
+    function updateStep3Buttons() {
+      const addBtn = document.getElementById('addDomainBtn');
+      const cancelBtn = document.getElementById('cancelCurrentDomainBtn');
+      if (editingProgram) {
+        addBtn.textContent = "Save Changes";
+        cancelBtn.textContent = "Cancel Editing";
+      } else {
+        addBtn.textContent = "Save";
+        cancelBtn.textContent = "Cancel Current Domain";
+      }
+    }
+    
+    /***********************
+     * Populate Programs & Targets (Expandable List)
+     ***********************/
+    function populateProgramsAndTargets(domain) {
+      const container = document.getElementById('programsContainer');
+      container.innerHTML = "";
+      let programs;
+      // If in edit mode, only show the program being edited.
+      if (editingProgram) {
+        programs = [editingProgram.program];
+      } else {
+        programs = [...new Set(libraryData.filter(row => row.domain === domain)
+                                    .map(row => row.program))];
+      }
+      programs.forEach(program => {
+        const programDiv = document.createElement('div');
+        programDiv.className = 'programItem';
+        programDiv.dataset.program = program;
+        
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'programHeader';
+    
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'toggleTargetsBtn';
+        toggleBtn.textContent = 'Show All';
+        headerDiv.appendChild(toggleBtn);
+    
+        const progLabel = document.createElement('span');
+        progLabel.className = 'programLabel';
+        progLabel.textContent = program;
+        headerDiv.appendChild(progLabel);
+    
+        // Status indicator
+        const statusSpan = document.createElement('span');
+        statusSpan.className = 'programStatus inactive';
+        statusSpan.textContent = 'Inactive';
+        headerDiv.appendChild(statusSpan);
+    
+        programDiv.appendChild(headerDiv);
+    
+        const targetsDiv = document.createElement('div');
+        targetsDiv.className = 'targetsContainer hidden';
+        const targets = [...new Set(libraryData.filter(row => row.domain === domain && row.program === program)
+                                      .map(row => row.target))];
+        targets.forEach(target => {
+          const label = document.createElement('label');
+          label.style.display = 'block';
+          const targetCheckbox = document.createElement('input');
+          targetCheckbox.type = 'checkbox';
+          targetCheckbox.className = 'targetCheckbox';
+          targetCheckbox.value = target;
+          if (editingProgram && editingProgram.program === program) {
+            if (editingProgram.targets.includes(target)) {
+              targetCheckbox.checked = true;
+            }
+          }
+          targetCheckbox.addEventListener('change', function() {
+            updateProgramStatus(programDiv);
+          });
+          label.appendChild(targetCheckbox);
+          label.appendChild(document.createTextNode(" " + target));
+          targetsDiv.appendChild(label);
+        });
+        programDiv.appendChild(targetsDiv);
+    
+        toggleBtn.addEventListener('click', function() {
+          if (targetsDiv.classList.contains('hidden')) {
+            targetsDiv.classList.remove('hidden');
+            toggleBtn.textContent = 'Hide';
+          } else {
+            targetsDiv.classList.add('hidden');
+            toggleBtn.textContent = 'Show All';
+          }
+        });
+    
+        container.appendChild(programDiv);
+        updateProgramStatus(programDiv);
+      });
+    }
+    
+    // Update program status indicator based on target selections.
+    function updateProgramStatus(programDiv) {
+      const statusSpan = programDiv.querySelector('.programStatus');
+      const targetCheckboxes = programDiv.querySelectorAll('.targetCheckbox');
+      const anyChecked = Array.from(targetCheckboxes).some(cb => cb.checked);
+      if (anyChecked) {
+        statusSpan.textContent = 'Active';
+        statusSpan.classList.add('active');
+        statusSpan.classList.remove('inactive');
+      } else {
+        statusSpan.textContent = 'Inactive';
+        statusSpan.classList.add('inactive');
+        statusSpan.classList.remove('active');
+      }
+    }
+    
+    /***********************
+     * Utility: Capture Current Domain Selection
+     ***********************/
+    function getCurrentDomainSelection() {
+      const container = document.getElementById('programsContainer');
+      const programItems = container.querySelectorAll('.programItem');
+      const domainSelection = {
+        domain: selectedDomain,
+        programs: []
+      };
+      let valid = false;
+      programItems.forEach(item => {
+        const programName = item.dataset.program;
+        const targetCheckboxes = item.querySelectorAll('.targetCheckbox:checked');
+        if (targetCheckboxes.length > 0) {
+          valid = true;
+          const targets = Array.from(targetCheckboxes).map(cb => cb.value);
+          domainSelection.programs.push({
+            program: programName,
+            targets: targets
+          });
+        }
+      });
+      if (!valid) {
+        alert("Please select at least one target for a program.");
+        return null;
+      }
+      return domainSelection;
+    }
+    
+    /***********************
+     * Cancel Current Domain / Cancel Editing
+     ***********************/
+    document.getElementById('cancelCurrentDomainBtn').addEventListener('click', function() {
+      if (editingProgram) {
+        editingProgram = null;
+      }
+      resetStep3();
+    });
+    
+    function resetStep3() {
+      selectedDomain = "";
+      document.getElementById('programsContainer').innerHTML = "";
+      document.getElementById('domainSelect').value = "";
+      document.getElementById('step3').classList.add('hidden');
+      document.getElementById('step2').classList.remove('hidden');
+      updateStep3Buttons();
+    }
+    
+    /***********************
+     * Save (Add Domain / Save Changes)
+     ***********************/
+    document.getElementById('addDomainBtn').addEventListener('click', function() {
+      const current = getCurrentDomainSelection();
+      if (!current) return;
+      if (editingProgram) {
+        let domainEntry = selections.find(entry => entry.domain === selectedDomain);
+        if (domainEntry) {
+          domainEntry.programs.push(current.programs[0]);
+        } else {
+          selections.push(current);
+        }
+        editingProgram = null;
+      } else {
+        selections.push(current);
+      }
+      updateSummary();
+      resetStep3();
+    });
+    
+    /***********************
+     * Export CSV from Summary
+     ***********************/
+    document.getElementById('exportSummaryBtn').addEventListener('click', function() {
+      if (selections.length === 0) {
+        alert("No selections to export.");
+        return;
+      }
+      let csvContent = "ChildName,Active,Domain,Program,Target,SD\n";
+      selections.forEach(sel => {
+         sel.programs.forEach(prog => {
+           prog.targets.forEach(target => {
+             const rows = libraryData.filter(row => 
+               row.domain === sel.domain &&
+               row.program === prog.program &&
+               row.target === target
+             );
+             rows.forEach(row => {
+               const line = `"${childName}","active","${row.domain}","${row.program}","${row.target}","${row.SD}"`;
+               csvContent += line + "\n";
+             });
+           });
+         });
+      });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${childName}_ABA_program.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+    
+    /***********************
+     * Edit Program from Summary
+     ***********************/
+    function editProgramFromSummary(domainIndex, programIndex) {
+      const domainEntry = selections[domainIndex];
+      const progObj = domainEntry.programs[programIndex];
+      domainEntry.programs.splice(programIndex, 1);
+      if (domainEntry.programs.length === 0) {
+        selections.splice(domainIndex, 1);
+      }
+      updateSummary();
+      editingProgram = {
+        domain: domainEntry.domain,
+        program: progObj.program,
+        targets: progObj.targets
+      };
+      selectedDomain = domainEntry.domain;
+      document.getElementById('step2').classList.add('hidden');
+      document.getElementById('step3').classList.remove('hidden');
+      document.getElementById('currentDomainLabel').textContent = selectedDomain;
+      updateStep3Buttons();
+      populateProgramsAndTargets(selectedDomain);
+    }
+  </script>
+</body>
+</html>
